@@ -1,0 +1,44 @@
+stages:
+  - prepare
+  - build
+
+include:
+  - project: dev/common/gitlab-ci-templates
+    file:
+      - kaniko_nocache.yml
+      - ecr_new.yml
+
+ecr-create-repo-spark:
+  stage: prepare
+  extends: .common-ecr-create-repo
+  variables:
+    IMAGE_NAME: data/spark-image
+    
+
+docker-build-spark:
+  extends: .common-kaniko-build
+  stage: build
+  before_script:
+    - TAGS="${IMAGE_TAG};latest"
+  variables:
+    DOCKERFILE: ${CI_PROJECT_DIR}/spark-images/spark-3.5.1_hadoop-3.4.0.Containerfile
+    IMAGE_NAME: data/spark-image
+    IMAGE_TAG: ${CI_PROJECT_NAME}.${CI_COMMIT_SHORT_SHA}
+
+ecr-create-repo-pyspark:
+  stage: prepare
+  extends: .common-ecr-create-repo
+  variables:
+    IMAGE_NAME: data/pyspark-image
+
+docker-build-pyspark:
+  extends: .common-kaniko-build
+  stage: build
+  before_script:
+    - TAGS="${IMAGE_TAG};latest"
+  variables:
+    DOCKERFILE: ${CI_PROJECT_DIR}/spark-images/pyspark-3.5.1_hadoop-3.4.0.Containerfile
+    IMAGE_NAME: data/pyspark-image
+    IMAGE_TAG: ${CI_PROJECT_NAME}.${CI_COMMIT_SHORT_SHA}
+    BUILDARG_x: 'base_img="670825305590.dkr.ecr.eu-central-1.amazonaws.com/data/spark-image:latest"'
+  needs: ["docker-build-spark"]
